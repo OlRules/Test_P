@@ -18,7 +18,7 @@ class TestStatusCompanies:
 
     @pytest.mark.parametrize('status', status_list)
     def test_get_statuses_companies(self, status):
-        response = self.request.get(f"/?status={status}&limit=3&offset=0")
+        response = self.request.get(f"/companies/?status={status}&limit=3&offset=0")
         assert response.status_code == 200, f'Status code is not 200, status code is {response.status_code}'
 
         # print()
