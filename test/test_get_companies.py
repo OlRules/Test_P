@@ -1,45 +1,33 @@
 import pytest
-# import requests
-# from data.urls import base_url
+from src.assertions import Assertion
+from src.get_companies import GetCompanies
 from data.data_files import StatusCompanies
 from src.my_requests import MyRequests
 
 
-from pprint import pprint
-
-
-# base_url = "https://send-request.me/api/companies"
-# status_list = ['ACTIVE', 'CLOSED', 'BANKRUPT']
-# status_list = StatusCompanies.status_list
-
 class TestStatusCompanies:
     status_list = StatusCompanies.status_list
     request = MyRequests()
+    get_companies = GetCompanies()
+    assertion = Assertion()
 
-    @pytest.mark.parametrize('status', status_list)
+    def test_get_statuses_companies1(self, read_companies_data):
+        data = read_companies_data
+        value = self.get_companies.get_id_company(data, "closed")
+        print(value)
+
+    @pytest.mark.parametrize("status", status_list)
     def test_get_statuses_companies(self, status):
         response = self.request.get(f"/companies/?status={status}&limit=3&offset=0")
-        assert response.status_code == 200, f'Status code is not 200, status code is {response.status_code}'
-
-        # print()
-        # pprint(response.json())
+        self.assertion.assert_status_code(response, 200)
 
     @pytest.mark.parametrize("status", status_list)
     def test_get_closed_companies(self, status):
-        response = self.request.get(f"""/?status={status}&limit=3&offset=0""")
-        print()
-        pprint(response.headers)
-        assert response.status_code == 200, f'Status code is not 200, status code is {response.status_code}'
-        # print(response.headers)
+        response = self.request.get(f"/companies/?status={status}&limit=3&offset=0")
+        items_list = response.json()["data"]
+        for item in items_list:
+            self.assertion.assert_text(item["company_status"], status)
 
-    #
-    @pytest.mark.parametrize("status", status_list)
-    def test_get_bankrupt_companies(self, status):
-        response = self.request.get(f"""/?status={status}&limit=3&offset=0""")
-        items_list = response.json()['data']
-        for item in range(len(items_list)):
-            print(items_list[item]['company_status'])
-            assert item['company_status'] == status
-        # print(items_list)
-        # print(response.json()['data'][0]['company_status'])
-        # pprint(response.json())
+    # def test_get_timeout(self):
+    #     response = self.request.get(f"/companies/?status=ACTIVE&limit=3&offset=0")
+    #     print(response.elapsed.total_seconds())

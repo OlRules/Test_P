@@ -1,32 +1,36 @@
-from src.my_requests import MyRequests
-from generator.generator import generated_person
+import pytest
+
+from data.data_files import KeysCreateUser, StatusCompanies
+from src.create_user import CreateUser
 from src.assertions import Assertion
 from data.status_code import StatusCode
-from src.base_page import BasePage
 
-class TestCreateUsers(BasePage):
-    assertions = Assertion()
+
+class TestCreateUsers:
+    company_status = StatusCompanies()
+    assertion = Assertion()
     status_code = StatusCode()
+    keys = KeysCreateUser()
+    post_method = CreateUser()
+
+    def test_get_status_code_201(self, prepare_user_in_active_company):
+        response = self.post_method.get_user(prepare_user_in_active_company)
+        self.assertion.assert_status_code(response, self.status_code.CREATE)
 
 
-    def test_create_user(self):
-        person_info = next(generated_person())
-        first_name = person_info.first_name
-        last_name = person_info.last_name
-        company_id = person_info.company_id
-        response = MyRequests.post('/users/', self.get_body(first_name, last_name, company_id))
-        body = response.json()
-        print(body)
-        self.assertions.assert_first_name(response,first_name)
-        self.assertions.assert_last_name(response, last_name)
+    @pytest.mark.parametrize("key", keys.keys)
+    def test_check_keys_in_response(self, prepare_user_in_active_company, key):
+        self.post_method.get_user(prepare_user_in_active_company)
 
-    def test_get_status_code_201(self):
-        person_info = next(generated_person())
-        first_name = person_info.first_name
-        last_name = person_info.last_name
-        company_id = person_info.company_id
-        response = MyRequests.post('/users/', self.get_body(first_name, last_name, company_id))
-        self.assertions.assert_status_code(response, self.status_code.CREATE)
-        # assert response.status_code  == 201, f"Status code not 201, status code is {response.status_code}"
-
-
+    def test_create_user_without_first_name(self):
+        self.post_method.create_user_without_first_name()
+        response, last_name = self.post_method.create_user_without_first_name()
+        self.assertion.assert_status_code(response, self.status_code.CREATE)
+        self.assertion.assert_first_name(response, None)
+        self.assertion.assert_last_name(response, last_name)
+    @pytest.mark.parametrize("company_id", company_status.invalid_company_status)
+    def test_create_user_from_closed_company(self, read_companies_data, company_id):
+        company_id = self.post_method.get_id_company(read_companies_data, "closed")
+        body = self.post_method.create_user_with_invalid_company_id(company_id)
+        response = self.post_method.get_user(body)
+        self.assertion.assert_status_code(response, self.status_code.BAD_REQUEST)

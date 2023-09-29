@@ -1,5 +1,8 @@
 import requests
-from data.urls import base_url
+from data.urls import Urls
+from src.logger import Logger
+
+
 class MyRequests:
     @staticmethod
     def get(url: str, data: dict = None, headers: dict = None, cookies: dict = None):
@@ -23,21 +26,26 @@ class MyRequests:
 
     @staticmethod
     def _send(url: str, data: dict, headers: dict, cookies: dict, method: str):
-        url = f"""{base_url}{url}"""
+        url = f"""{Urls.base_url}{url}"""
 
         if headers is None:
             headers = {}
         if cookies is None:
             cookies = {}
 
+        Logger.add_request(url, data, headers, cookies, method)
+
         if method == "GET":
-            response = requests.get(url, params=data, headers=headers , cookies=cookies)
+            response = requests.get(url, params=data, headers=headers, cookies=cookies)
         elif method == "POST":
             response = requests.post(url, json=data, headers=headers, cookies=cookies)
         elif method == "PUT":
             response = requests.put(url, json=data, headers=headers, cookies=cookies)
         elif method == "DELETE":
-            response = requests.delete(url, json=data, headers=headers, cookies=cookies)
+            response = requests.delete(url, data=data, headers=headers, cookies=cookies)
         else:
-            raise Exception(f"""Bad method {method} was recived""")
+            raise Exception(f"""Bad method {method} was received""")
+
+        Logger.add_response(response)
+
         return response
